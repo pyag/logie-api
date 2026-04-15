@@ -1,11 +1,12 @@
 import logging
 
 from argon2 import PasswordHasher
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Request
 from email_validator import validate_email, EmailNotValidError
 
 from pydmodels.signup_model import SignupRequestModel
 from service import user as user_service
+from service import session as session_service
 
 logger = logging.getLogger("uvicorn.error")
 router = APIRouter()
@@ -42,19 +43,22 @@ def validate_request(req: SignupRequestModel):
 
 
 @router.post('/signup/', status_code=status.HTTP_201_CREATED)
-async def signup(req: SignupRequestModel):
+async def signup(req_body: SignupRequestModel, request: Request):
     """Create a new locker with the given name and password."""
 
     try:
-        validate_request(req)
+        validate_request(req_body)
 
-        lname = req.lockername
-        pwd = req.password
-        email = req.email
+        lname = req_body.lockername
+        pwd = req_body.password
+        email = req_body.email
         pHash = hash_password(pwd)
 
         logger.info(f"Signup request: lockername={lname}, email={email}")
-        await user_service.save(lname, pHash, email)
+        locker = await user_service.save(lname, pHash, email)
+
+        # Create session with the returned locker
+        session_service.create_session(request, locker)
 
         return {
             "status_code": status.HTTP_201_CREATED,

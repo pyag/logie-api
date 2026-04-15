@@ -8,8 +8,8 @@ async def lockerNameExists(name: str) -> bool:
     """Check if the locker name already exists in the database."""
     return await Locker.filter(name=name).exists()
 
-async def save(lname: str, pHash: str, email: str | None = None) -> None:
-    """Save the locker to the database."""
+async def save(lname: str, pHash: str, email: str | None = None) -> Locker:
+    """Save the locker to the database and return the created locker."""
     try:
         if lname:
             lname = lname.strip()
@@ -21,7 +21,8 @@ async def save(lname: str, pHash: str, email: str | None = None) -> None:
             if await emailExists(email):
                 raise ValueError("Email already exists.")
 
-        await Locker.create(name=lname, pwd=pHash, email=email)
+        locker = await Locker.create(name=lname, pwd=pHash, email=email)
+        return locker
     except ValueError as ve:
         raise ve
     except Exception as e:
