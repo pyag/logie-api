@@ -4,5 +4,6 @@ class Settings(BaseSettings):
     app_name: str
     cors_origin: str
     db_url: str
+    secret_key: str
 
     model_config = SettingsConfigDict(env_file=".env")

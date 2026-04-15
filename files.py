@@ -4,7 +4,7 @@ import datetime
 
 from fastapi import APIRouter
 
-from file_model import FileModel, FileDataModel
+from pydmodels.file_model import FileModel, FileDataModel
 
 router = APIRouter()
 

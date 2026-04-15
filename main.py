@@ -2,9 +2,11 @@ from functools import lru_cache
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from tortoise.contrib.fastapi import register_tortoise, Tortoise
+from starlette.middleware.sessions import SessionMiddleware
+from tortoise.contrib.fastapi import register_tortoise
 
 from files import router as files_router
+from routers import user_router
 from config import Settings
 
 @lru_cache
@@ -32,4 +34,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Starlette session middleware
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=get_settings().secret_key
+)
+
 app.include_router(files_router)
+app.include_router(user_router)

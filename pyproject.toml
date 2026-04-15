@@ -5,7 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "argon2-cffi>=25.1.0",
+    "email-validator>=2.3.0",
     "fastapi[standard]>=0.118.0",
+    "itsdangerous>=2.2.0",
     "pydantic-settings>=2.13.1",
     "python-dotenv>=1.1.1",
     "tortoise-orm[asyncpg]>=1.1.7",

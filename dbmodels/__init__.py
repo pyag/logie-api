@@ -1,1 +1,1 @@
-from .user_model import UserTable
+from .locker_model import Locker
