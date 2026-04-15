@@ -57,7 +57,9 @@ async def signup(req: SignupRequestModel):
         await user_service.save(lname, pHash, email)
 
         return {
+            "status_code": status.HTTP_201_CREATED,
             "message": "Signup successful!",
+            "success": True,
         }
     except ValueError as ve:
         logger.warning(f"Signup validation failed: {ve}")

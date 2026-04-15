@@ -21,7 +21,6 @@ async def save(lname: str, pHash: str, email: str | None = None) -> None:
             if await emailExists(email):
                 raise ValueError("Email already exists.")
 
-        print(f"Saving locker: name={lname}, email={email}")
         await Locker.create(name=lname, pwd=pHash, email=email)
     except ValueError as ve:
         raise ve
