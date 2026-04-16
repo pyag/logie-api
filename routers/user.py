@@ -78,7 +78,18 @@ async def signup(req_body: SignupRequestModel, request: Request):
             detail="An unexpected error occurred during signup.",
         )
 
-@router.get("/users/")
-async def list_users():
-    """Return a listing of users in the system."""
-    return {"users": ["hello", "world"]}
+@router.get('/me/')
+async def get_me(request: Request):
+    """Return the currently authenticated user from the session."""
+    user = session_service.get_current_user(request)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+    return {
+        "status_code": status.HTTP_200_OK,
+        "message": "User authenticated",
+        "success": True,
+        "data": user,
+    }
