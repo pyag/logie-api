@@ -93,3 +93,13 @@ async def get_me(request: Request):
         "success": True,
         "data": user,
     }
+
+@router.post('/logout/')
+async def logout(request: Request):
+    """Clear the current session and log the user out."""
+    session_service.clear_session(request)
+    return {
+        "status_code": status.HTTP_200_OK,
+        "message": "Logged out successfully",
+        "success": True,
+    }
