@@ -4,7 +4,7 @@ from argon2 import PasswordHasher
 from fastapi import APIRouter, HTTPException, status, Request
 from email_validator import validate_email, EmailNotValidError
 
-from pydmodels.signup_model import SignupRequestModel
+from pydmodels.signup_model import SignupRequestModel, LoginRequestModel
 from service import user as user_service
 from service import session as session_service
 
@@ -76,6 +76,37 @@ async def signup(req_body: SignupRequestModel, request: Request):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred during signup.",
+        )
+
+@router.post('/login/')
+async def login(req_body: LoginRequestModel, request: Request):
+    """Authenticate user and create session."""
+    try:
+        identifier = req_body.identifier.strip()
+        password = req_body.password
+
+        locker = await user_service.authenticate(identifier, password)
+        if not locker:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials",
+            )
+
+        # Create session
+        session_service.create_session(request, locker)
+
+        return {
+            "status_code": status.HTTP_200_OK,
+            "message": "Login successful!",
+            "success": True,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Unexpected error during login")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during login.",
         )
 
 @router.get('/me/')

@@ -1,4 +1,5 @@
 from dbmodels.locker_model import Locker
+from argon2 import PasswordHasher
 
 async def emailExists(email: str) -> bool:
     """Check if the email already exists in the database."""
@@ -27,3 +28,19 @@ async def save(lname: str, pHash: str, email: str | None = None) -> Locker:
         raise ve
     except Exception as e:
         raise e
+
+async def authenticate(identifier: str, password: str) -> Locker | None:
+    """Authenticate user by locker name or email and password."""
+    ph = PasswordHasher()
+    # Try locker name first
+    locker = await Locker.filter(name=identifier).first()
+    if not locker:
+        # Try email
+        locker = await Locker.filter(email=identifier).first()
+    if locker:
+        try:
+            ph.verify(locker.pwd, password)
+            return locker
+        except Exception:
+            return None
+    return None
