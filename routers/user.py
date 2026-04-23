@@ -89,7 +89,7 @@ async def login(req_body: LoginRequestModel, request: Request):
         if not locker:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials",
+                detail="The locker name/email or password does not match.",
             )
 
         # Create session
