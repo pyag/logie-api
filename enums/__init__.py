@@ -1,1 +1,1 @@
-from .file import FileType
+from .file import FileType, FileSource

@@ -1,6 +1,6 @@
 from tortoise import fields, Model
 
-from enums import FileType
+from enums import FileType, FileSource
 
 class File(Model):
     # File properties
@@ -12,7 +12,7 @@ class File(Model):
     # File data
     # The location of the file on the server or cloud storage
     location = fields.CharField(max_length=2048, null=True)
-    source = fields.CharField(max_length=255, null=True)
+    source = fields.CharEnumField(FileSource, null=True)
 
     # File heirarchy and ownership
     user = fields.ForeignKeyField('models.Locker', related_name='files')

@@ -5,3 +5,7 @@ class FileType(str, Enum):
     VIDEO = "VIDEO"
     IMAGE = "IMAGE"
     BINARY = "BINARY"
+
+class FileSource(str, Enum):
+    LOCAL = "LOCAL"
+
