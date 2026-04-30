@@ -1,5 +1,12 @@
-from dbmodels.locker_model import Locker
+import logging
+
 from argon2 import PasswordHasher
+
+from dbmodels.file_model import File
+from dbmodels.locker_model import Locker
+from enums import FileType
+
+logger = logging.getLogger("uvicorn.debug")
 
 async def emailExists(email: str) -> bool:
     """Check if the email already exists in the database."""
@@ -44,3 +51,20 @@ async def authenticate(identifier: str, password: str) -> Locker | None:
         except Exception:
             return None
     return None
+
+async def create_root_folder(locker: Locker) -> None:
+    """Create the root folder for the locker."""
+
+    try:
+        logger.info(f"Creating root folder for locker: {locker.name} (ID: {locker.uid})")
+        # Create the root folder for the locker
+        await File.create(
+            name="/",
+            size=0,
+            file_type=FileType.FOLDER,
+
+            user=locker,
+            parent=None,
+        )
+    except Exception as e:
+        raise e

@@ -55,7 +55,12 @@ async def signup(req_body: SignupRequestModel, request: Request):
         pHash = hash_password(pwd)
 
         logger.info(f"Signup request: lockername={lname}, email={email}")
+
+        # Save the new locker to the database
         locker = await user_service.save(lname, pHash, email)
+
+        # Create the root folder for the locker
+        await user_service.create_root_folder(locker)
 
         # Create session with the returned locker
         session_service.create_session(request, locker)
