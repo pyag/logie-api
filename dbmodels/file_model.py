@@ -5,7 +5,7 @@ from enums import FileType, FileSource
 class File(Model):
     # File properties
     uid = fields.UUIDField(primary_key=True)
-    name = fields.CharField(max_length=1024, unique=True, required=True)
+    name = fields.CharField(max_length=1024, required=True)
     size = fields.IntField(required=True)
     file_type = fields.CharEnumField(FileType, null=True)
 

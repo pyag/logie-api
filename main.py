@@ -8,8 +8,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 from tortoise.contrib.fastapi import register_tortoise
 
-from files import router as files_router
-from routers import user_router
+from routers import files_router, user_router
 from config import Settings
 
 
