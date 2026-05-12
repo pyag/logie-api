@@ -16,7 +16,7 @@ async def list_files(user: Annotated[dict | None, Depends(get_current_user)] = N
     entries_data = await list_uploaded_files(user["user_id"])
     entries: List[FileDataModel] = [FileDataModel(**entry) for entry in entries_data]
 
-    header = ["name", "type", "size", "modified"]
+    header = ["name", "type", "size", "modified", "Options/Actions"]
     return FileModel(header=header, data=entries)
 
 

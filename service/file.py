@@ -31,6 +31,8 @@ def _normalize_file_type(file_type: str) -> FileType:
         return FileType.IMAGE
     if normalized.startswith("video/"):
         return FileType.VIDEO
+    if normalized.startswith("application/pdf"):
+        return FileType.PDF
     return FileType.BINARY
 
 
@@ -81,7 +83,6 @@ async def upload_file_chunk(
 
     return {
         "upload_id": upload_id,
-        "path": str(destination),
         "completed": completed,
         "filename": filename,
     }
@@ -132,6 +133,7 @@ async def list_uploaded_files(user_id: str) -> list[dict[str, str]]:
 
     for file_record in files:
         file_entries.append({
+            "file_id": str(file_record.uid),
             "name": file_record.name,
             "type": file_record.file_type.value if file_record.file_type else "UNKNOWN",
             "size": _format_size(file_record.size),
