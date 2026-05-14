@@ -1,9 +1,10 @@
 from typing import Annotated, List
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse
 
 from pydmodels.file_model import FileModel, FileDataModel
-from service.file import list_uploaded_files, upload_file_chunk
+from service.file import list_uploaded_files, upload_file_chunk, download_file
 from service.session import get_current_user
 
 router = APIRouter()
@@ -18,6 +19,11 @@ async def list_files(user: Annotated[dict | None, Depends(get_current_user)] = N
 
     header = ["name", "type", "size", "modified", "Options/Actions"]
     return FileModel(header=header, data=entries)
+
+
+@router.get("/download/{file_id}")
+async def download_file_endpoint(file_id: str):
+    return await download_file(file_id)
 
 
 @router.post("/upload/chunk/")

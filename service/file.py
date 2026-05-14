@@ -1,10 +1,11 @@
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import aiofiles
-from fastapi import UploadFile
+from fastapi import HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from mimetypes import guess_extension
 from tortoise.exceptions import IntegrityError
 
@@ -140,3 +141,20 @@ async def list_uploaded_files(user_id: str) -> list[dict[str, str]]:
             "modified": file_record.created_at.isoformat(),
         })
     return file_entries
+
+
+async def download_file(file_id: str) -> FileResponse:
+    try:
+        file_uuid = UUID(file_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid file ID")
+
+    file_record = await FileDB.get_or_none(uid=file_uuid)
+    if not file_record:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    file_path = Path(file_record.location)
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found on server")
+
+    return FileResponse(path=file_path, filename=file_record.name)
