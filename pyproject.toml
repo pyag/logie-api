@@ -14,3 +14,6 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "tortoise-orm[asyncpg]>=1.1.7",
 ]
+
+[tool.tortoise]
+config = "db.TORTOISE_ORM"

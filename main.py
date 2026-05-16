@@ -10,6 +10,7 @@ from tortoise.contrib.fastapi import register_tortoise
 
 from routers import files_router, user_router
 from config import Settings
+from db import TORTOISE_ORM
 
 
 def format_api_response(status_code: int, message: str, success: bool = True, data: dict | None = None):
@@ -61,9 +62,8 @@ async def generic_exception_handler(request: Request, exc: Exception):
 # Register Tortoise ORM with FastAPI
 register_tortoise(
     app,
-    db_url=get_settings().db_url,
-    modules={'models': ['dbmodels']},
-    generate_schemas=True,
+    config=TORTOISE_ORM,
+    generate_schemas=False,
     add_exception_handlers=True,
 )
 

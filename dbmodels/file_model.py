@@ -8,6 +8,7 @@ class File(Model):
     name = fields.CharField(max_length=1024, required=True)
     size = fields.IntField(required=True)
     file_type = fields.CharEnumField(FileType, null=True)
+    hidden = fields.BooleanField(default=False)
 
     # File data
     # The location of the file on the server or cloud storage
