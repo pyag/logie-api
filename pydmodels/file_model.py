@@ -4,6 +4,7 @@ class FileDataModel(BaseModel):
     file_id: str
     name: str
     type: str
+    hidden: bool
     size: str
     modified: str
 

@@ -137,6 +137,7 @@ async def list_uploaded_files(user_id: str) -> list[dict[str, str]]:
             "file_id": str(file_record.uid),
             "name": file_record.name,
             "type": file_record.file_type.value if file_record.file_type else "UNKNOWN",
+            "hidden": file_record.hidden,
             "size": _format_size(file_record.size),
             "modified": file_record.created_at.isoformat(),
         })
