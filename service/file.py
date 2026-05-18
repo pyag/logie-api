@@ -178,3 +178,22 @@ async def hide_file(file_id: str, user_id: str) -> dict[str, str]:
     await file_record.save()
 
     return {"message": "File hidden successfully", "file_id": file_id}
+
+
+async def unhide_file(file_id: str, user_id: str) -> dict[str, str]:
+    try:
+        file_uuid = UUID(file_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid file ID")
+
+    file_record = await FileDB.get_or_none(uid=file_uuid)
+    if not file_record:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    if str(file_record.user_id) != user_id:
+        raise HTTPException(status_code=403, detail="You do not have permission to unhide this file")
+
+    file_record.hidden = False
+    await file_record.save()
+
+    return {"message": "File unhidden successfully", "file_id": file_id}
