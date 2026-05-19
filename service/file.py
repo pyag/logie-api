@@ -144,7 +144,7 @@ async def list_uploaded_files(user_id: str) -> list[dict[str, str]]:
     return file_entries
 
 
-async def download_file(file_id: str) -> FileResponse:
+async def download_file(file_id: str, user_id: str | None = None) -> FileResponse:
     try:
         file_uuid = UUID(file_id)
     except ValueError:
@@ -153,6 +153,12 @@ async def download_file(file_id: str) -> FileResponse:
     file_record = await FileDB.get_or_none(uid=file_uuid)
     if not file_record:
         raise HTTPException(status_code=404, detail="File not found")
+
+    # Check if file is hidden
+    if file_record.hidden:
+        # If hidden, only allow download if user is the owner
+        if not user_id or str(file_record.user_id) != user_id:
+            raise HTTPException(status_code=403, detail="Permission denied to download the file")
 
     file_path = Path(file_record.location)
     if not file_path.exists():

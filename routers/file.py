@@ -22,8 +22,12 @@ async def list_files(user: Annotated[dict | None, Depends(get_current_user)] = N
 
 
 @router.get("/download/{file_id}")
-async def download_file_endpoint(file_id: str):
-    return await download_file(file_id)
+async def download_file_endpoint(
+    file_id: str,
+    user: Annotated[dict | None, Depends(get_current_user)] = None,
+):
+    user_id = user["user_id"] if user else None
+    return await download_file(file_id, user_id)
 
 
 @router.post("/upload/chunk/")
