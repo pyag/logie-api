@@ -20,3 +20,8 @@ class File(Model):
     parent = fields.ForeignKeyField('models.File', related_name='children', null=True)
 
     created_at = fields.DatetimeField(auto_now_add=True)
+
+    class Meta:
+        # Ensure that each file name is unique within the same parent
+        # folder for the same user
+        unique_together = (("name", "parent", "user"),)
