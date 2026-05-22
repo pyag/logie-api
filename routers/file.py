@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from fastapi.responses import FileResponse
 
 from pydmodels.file_model import FileModel, FileDataModel
-from service.file import list_uploaded_files, upload_file_chunk, download_file, hide_file, unhide_file
+from service.file import list_uploaded_files, upload_file_chunk, download_file, hide_file, unhide_file, delete_file
 from service.session import get_current_user
 
 router = APIRouter()
@@ -79,4 +79,15 @@ async def unhide_file_endpoint(
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     result = await unhide_file(file_id=file_id, user_id=user["user_id"])
+    return result
+
+@router.post("/delete/{file_id}")
+async def delete_file_endpoint(
+    file_id: str,
+    user: Annotated[dict | None, Depends(get_current_user)] = None,
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    result = await delete_file(file_id=file_id, user_id=user['user_id'])
     return result

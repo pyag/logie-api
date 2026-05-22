@@ -1,3 +1,5 @@
+import logging
+
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -14,6 +16,8 @@ from enums.file import FileSource, FileType
 
 ROOT_UPLOAD_DIR = Path.home() / "upload"
 CHUNK_SIZE = 1024 * 1024
+
+logger = logging.getLogger(__name__)
 
 
 def _format_size(size: int) -> str:
@@ -203,3 +207,31 @@ async def unhide_file(file_id: str, user_id: str) -> dict[str, str]:
     await file_record.save()
 
     return {"message": "File unhidden successfully", "file_id": file_id}
+
+async def delete_file(file_id: str, user_id: str) -> dict[str, str]:
+    try:
+        file_uuid = UUID(file_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid file ID")
+
+    file_record = await FileDB.get_or_none(uid=file_uuid)
+    if not file_record:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    if str(file_record.user_id) != user_id:
+        raise HTTPException(status_code=403, detail="You do not have permission to delete this file")
+
+    # Delete the physical file
+    file_path = Path(file_record.location)
+    if file_path.exists():
+        try:
+            file_path.unlink()
+        except Exception:
+            # Log the error but continue to delete the database record
+            logger.error(f"Failed to delete file at {file_path}, but will remove database record. Error: {e}")
+            pass
+
+    # Delete the database record
+    await file_record.delete()
+
+    return {"message": "File deleted successfully", "file_id": file_id}
