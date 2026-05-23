@@ -50,6 +50,7 @@ async def upload_file_chunk(
     file_size: int,
     chunk_index: int,
     total_chunks: int,
+    pid: str,
 ) -> dict[str, Any]:
     now = datetime.now()
     year = now.strftime("%Y")
@@ -84,6 +85,7 @@ async def upload_file_chunk(
             file_type=file_type,
             file_size=file_size,
             location=str(destination),
+            pid=pid,
         )
 
     return {
@@ -99,6 +101,7 @@ async def _save_file_metadata(
     file_type: str,
     file_size: int,
     location: str,
+    pid: str,
 ) -> None:
     file_type_enum = _normalize_file_type(file_type)
     try:
@@ -118,6 +121,7 @@ async def _save_file_metadata(
             location=location,
             source=FileSource.LOCAL,
             user_id=uid,
+            parent_id=UUID(pid) if pid else None,
         )
     except IntegrityError:
         # Fallback to update existing if a duplicate unique constraint arises.
@@ -132,9 +136,10 @@ async def _save_file_metadata(
         pass
 
 
-async def list_uploaded_files(user_id: str) -> list[dict[str, str]]:
+async def list_uploaded_files(user_id: str, pid: str) -> list[dict[str, str]]:
     file_entries: list[dict[str, str]] = []
-    files = await FileDB.filter(user_id=user_id).order_by('-created_at')
+    parent = await FileDB.get_or_none(uid=UUID(pid), user_id=user_id).first()
+    files = await FileDB.filter(user_id=user_id, parent=parent).order_by('-created_at')
 
     for file_record in files:
         file_entries.append({

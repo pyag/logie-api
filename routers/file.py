@@ -10,11 +10,13 @@ from service.session import get_current_user
 router = APIRouter()
 
 @router.get("/files/", response_model=FileModel)
-async def list_files(user: Annotated[dict | None, Depends(get_current_user)] = None):
+async def list_files(
+    pid: str,
+    user: Annotated[dict | None, Depends(get_current_user)] = None):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    entries_data = await list_uploaded_files(user["user_id"])
+    entries_data = await list_uploaded_files(user["user_id"], pid)
     entries: List[FileDataModel] = [FileDataModel(**entry) for entry in entries_data]
 
     header = ["name", "type", "size", "modified", "Options/Actions"]
@@ -40,6 +42,7 @@ async def upload_chunk(
     file_size: int = Form(...),
     chunk_index: int = Form(...),
     total_chunks: int = Form(...),
+    pid: str = Form(...),
     user: Annotated[dict | None, Depends(get_current_user)] = None,
 ):
     if not user:
@@ -54,6 +57,7 @@ async def upload_chunk(
         file_size=file_size,
         chunk_index=chunk_index,
         total_chunks=total_chunks,
+        pid=pid,
     )
     return result
 

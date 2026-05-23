@@ -52,13 +52,13 @@ async def authenticate(identifier: str, password: str) -> Locker | None:
             return None
     return None
 
-async def create_root_folder(locker: Locker) -> None:
+async def create_root_folder(locker: Locker) -> str:
     """Create the root folder for the locker."""
 
     try:
         logger.info(f"Creating root folder for locker: {locker.name} (ID: {locker.uid})")
         # Create the root folder for the locker
-        await File.create(
+        root = await File.create(
             name="/",
             size=0,
             file_type=FileType.FOLDER,
@@ -66,5 +66,18 @@ async def create_root_folder(locker: Locker) -> None:
             user=locker,
             parent=None,
         )
+
+        return str(root.uid)
+    except Exception as e:
+        raise e
+
+async def get_root_folder_id(locker: Locker) -> str:
+    """Get the root folder ID for the locker."""
+    try:
+        root = await File.filter(user=locker, parent=None).first()
+        if not root:
+            raise ValueError("Root folder not found for the locker.")
+
+        return str(root.uid)
     except Exception as e:
         raise e

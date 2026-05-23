@@ -60,10 +60,10 @@ async def signup(req_body: SignupRequestModel, request: Request):
         locker = await user_service.save(lname, pHash, email)
 
         # Create the root folder for the locker
-        await user_service.create_root_folder(locker)
+        root_id = await user_service.create_root_folder(locker)
 
         # Create session with the returned locker
-        session_service.create_session(request, locker)
+        session_service.create_session(request, locker, root_id)
 
         return {
             "status_code": status.HTTP_201_CREATED,
@@ -97,8 +97,11 @@ async def login(req_body: LoginRequestModel, request: Request):
                 detail="The locker name/email or password does not match.",
             )
 
+        # Get the root folder ID for the locker
+        root_id = await user_service.get_root_folder_id(locker)
+
         # Create session
-        session_service.create_session(request, locker)
+        session_service.create_session(request, locker, root_id)
 
         return {
             "status_code": status.HTTP_200_OK,
