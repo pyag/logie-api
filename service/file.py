@@ -240,3 +240,21 @@ async def delete_file(file_id: str, user_id: str) -> dict[str, str]:
     await file_record.delete()
 
     return {"message": "File deleted successfully", "file_id": file_id}
+
+async def create_folder(folder_name: str, pid: str, user_id: str) -> str:
+    try:
+        folder = await FileDB.create(
+            uid=uuid4(),
+            name=folder_name,
+            size=0,
+            file_type=FileType.FOLDER,
+            location="",
+            source=FileSource.LOCAL,
+            user_id=user_id,
+            parent_id=UUID(pid) if pid else None,
+        )
+
+        return str(folder.uid)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create folder: {str(e)}")

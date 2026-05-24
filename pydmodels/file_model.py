@@ -14,3 +14,7 @@ class FileModel(BaseModel):
 
 class FileListResponseModel(BaseModel):
     files: FileModel
+
+class CreateNewFolderModel(BaseModel):
+    folder_name: str
+    pid: str
