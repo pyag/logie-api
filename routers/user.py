@@ -4,7 +4,7 @@ from argon2 import PasswordHasher
 from fastapi import APIRouter, HTTPException, status, Request
 from email_validator import validate_email, EmailNotValidError
 
-from pydmodels.signup_model import SignupRequestModel, LoginRequestModel
+from pydmodels.user_model import SignupRequestModel, LoginRequestModel, ChangePasswordRequestModel
 from service import user as user_service
 from service import session as session_service
 
@@ -85,6 +85,12 @@ async def signup(req_body: SignupRequestModel, request: Request):
 
 @router.post('/login/')
 async def login(req_body: LoginRequestModel, request: Request):
+    if not req_body.identifier or not req_body.password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Locker name/email and password are required.",
+        )
+
     """Authenticate user and create session."""
     try:
         identifier = req_body.identifier.strip()
@@ -132,6 +138,47 @@ async def get_me(request: Request):
         "success": True,
         "data": user,
     }
+
+@router.post('/change-password/')
+async def change_password(body: ChangePasswordRequestModel, request: Request):
+    """Change the password for the currently authenticated user."""
+    user = session_service.get_current_user(request)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+
+    if not body.current_password or not body.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password and new password are required.",
+        )
+    
+    if body.current_password == body.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password cannot be the same as the current password.",
+        )
+
+    try:
+        await user_service.change_password(user, body.current_password, body.new_password)
+        return {
+            "status_code": status.HTTP_200_OK,
+            "message": "Password changed successfully",
+            "success": True,
+        }
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve),
+        )
+    except Exception as e:
+        logger.exception("Unexpected error during password change")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while changing the password.",
+        )
 
 @router.post('/logout/')
 async def logout(request: Request):

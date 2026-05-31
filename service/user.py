@@ -1,6 +1,7 @@
 import logging
 
 from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 
 from dbmodels.file_model import File
 from dbmodels.locker_model import Locker
@@ -79,5 +80,28 @@ async def get_root_folder_id(locker: Locker) -> str:
             raise ValueError("Root folder not found for the locker.")
 
         return str(root.uid)
+    except Exception as e:
+        raise e
+
+async def change_password(user, current_password, new_password) -> None:
+    """Change the user's password after verifying the current password."""
+    ph = PasswordHasher()
+    try:
+        print("Changing password for user: " + str(user))
+        # Get the locker from the database
+        locker = await Locker.filter(uid=user['user_id']).first()
+        if not locker:
+            raise ValueError("Locker not found.")
+
+        # Verify current password
+        try:
+            ph.verify(locker.pwd, current_password)
+        except VerifyMismatchError:
+            raise ValueError("Current password is incorrect.")
+
+        # Hash new password and update
+        new_pHash = ph.hash(new_password)
+        locker.pwd = new_pHash
+        await locker.save()
     except Exception as e:
         raise e

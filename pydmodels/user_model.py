@@ -9,3 +9,7 @@ class SignupRequestModel(BaseModel):
 class LoginRequestModel(BaseModel):
     identifier: str  # locker name or email
     password: str
+
+class ChangePasswordRequestModel(BaseModel):
+    current_password: str
+    new_password: str
