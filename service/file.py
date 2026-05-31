@@ -13,6 +13,7 @@ from tortoise.exceptions import IntegrityError
 
 from dbmodels.file_model import File as FileDB
 from enums.file import FileSource, FileType
+from logic.file import delete_file_from_storage
 
 ROOT_UPLOAD_DIR = Path.home() / "upload"
 CHUNK_SIZE = 1024 * 1024
@@ -226,15 +227,13 @@ async def delete_file(file_id: str, user_id: str) -> dict[str, str]:
     if str(file_record.user_id) != user_id:
         raise HTTPException(status_code=403, detail="You do not have permission to delete this file")
 
-    # Delete the physical file
-    file_path = Path(file_record.location)
-    if file_path.exists():
-        try:
-            file_path.unlink()
-        except Exception:
-            # Log the error but continue to delete the database record
-            logger.error(f"Failed to delete file at {file_path}, but will remove database record. Error: {e}")
-            pass
+    # Delete the physical file``
+
+    try:
+        delete_file_from_storage(file_record.location)  # Implement this function based on your storage solution
+    except Exception as e:
+        # Log the error but continue to delete the database record
+        logger.error(f"Failed to delete file at {file_record.location}, but will remove database record. Error: {e}")
 
     # Delete the database record
     await file_record.delete()

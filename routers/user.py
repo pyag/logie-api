@@ -4,7 +4,7 @@ from argon2 import PasswordHasher
 from fastapi import APIRouter, HTTPException, status, Request
 from email_validator import validate_email, EmailNotValidError
 
-from pydmodels.user_model import SignupRequestModel, LoginRequestModel, ChangePasswordRequestModel
+from pydmodels.user_model import SignupRequestModel, LoginRequestModel, ChangePasswordRequestModel, DeleteLockerRequestModel
 from service import user as user_service
 from service import session as session_service
 
@@ -179,6 +179,43 @@ async def change_password(body: ChangePasswordRequestModel, request: Request):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while changing the password.",
         )
+
+@router.post('/delete-locker/')
+async def delete_locker(body: DeleteLockerRequestModel, request: Request):
+    """Delete the locker for the currently authenticated user."""
+    user = session_service.get_current_user(request)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+
+    if not body.password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password is required to delete locker.",
+        )
+
+    try:
+        await user_service.delete_locker(user, body.password)
+        session_service.clear_session(request)
+        return {
+            "status_code": status.HTTP_200_OK,
+            "message": "Locker deleted successfully",
+            "success": True,
+        }
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve),
+        )
+    except Exception as e:
+        logger.exception("Unexpected error during locker deletion")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while deleting the locker.",
+        )
+    
 
 @router.post('/logout/')
 async def logout(request: Request):
