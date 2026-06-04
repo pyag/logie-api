@@ -38,6 +38,38 @@ async def save(lname: str, pHash: str, email: str | None = None) -> Locker:
     except Exception as e:
         raise e
 
+async def search_lockers(name: str) -> list[dict]:
+    """Search lockers by name, returning exact matches first and partial matches next."""
+    search_text = name.strip()
+    if not search_text:
+        return []
+
+    exact_match = await Locker.filter(name__iexact=search_text).all()
+    exact_ids = [locker.uid for locker in exact_match]
+
+    partial_query = Locker.filter(name__icontains=search_text)
+    if exact_ids:
+        partial_query = partial_query.exclude(uid__in=exact_ids)
+
+    partial_matches = await partial_query.all()
+
+    results = [
+        {
+            "uid": str(locker.uid),
+            "name": locker.name,
+        }
+        for locker in exact_match
+    ]
+    results.extend(
+        {
+            "uid": str(locker.uid),
+            "name": locker.name,
+        }
+        for locker in partial_matches
+    )
+
+    return results
+
 def delete_files_from_storage(files):
     """Delete files from storage based on their location field."""
     for file in files:

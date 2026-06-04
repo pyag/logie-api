@@ -1,10 +1,16 @@
 import logging
 
 from argon2 import PasswordHasher
-from fastapi import APIRouter, HTTPException, status, Request
+from fastapi import APIRouter, HTTPException, status, Request, Query
 from email_validator import validate_email, EmailNotValidError
 
-from pydmodels.user_model import SignupRequestModel, LoginRequestModel, ChangePasswordRequestModel, DeleteLockerRequestModel
+from pydmodels.user_model import (
+    SignupRequestModel,
+    LoginRequestModel,
+    ChangePasswordRequestModel,
+    DeleteLockerRequestModel,
+    SearchLockerResponseModel,
+)
 from service import user as user_service
 from service import session as session_service
 
@@ -138,6 +144,32 @@ async def get_me(request: Request):
         "success": True,
         "data": user,
     }
+
+@router.get('/search/', response_model=SearchLockerResponseModel)
+async def search_lockers(name: str | None = Query(None, min_length=1, description="Locker name to search for")):
+    """Search for lockers by name. Exact match results are returned first, then partial matches."""
+    if not name or not name.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Search text is required.",
+        )
+
+    try:
+        lockers = await user_service.search_lockers(name)
+        return {
+            "status_code": status.HTTP_200_OK,
+            "message": "Search results",
+            "success": True,
+            "data": {
+                "lockers": lockers,
+            },
+        }
+    except Exception as e:
+        logger.exception("Unexpected error during search")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during search.",
+        )
 
 @router.post('/change-password/')
 async def change_password(body: ChangePasswordRequestModel, request: Request):

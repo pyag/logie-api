@@ -16,3 +16,13 @@ class ChangePasswordRequestModel(BaseModel):
 
 class DeleteLockerRequestModel(BaseModel):
     password: str
+
+class LockerSearchItemModel(BaseModel):
+    uid: str
+    name: str
+
+class SearchLockerResponseModel(BaseModel):
+    status_code: int
+    message: str
+    success: bool
+    data: dict[str, list[LockerSearchItemModel]]
