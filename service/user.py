@@ -135,7 +135,6 @@ async def change_password(user, current_password, new_password) -> None:
     """Change the user's password after verifying the current password."""
     ph = PasswordHasher()
     try:
-        print("Changing password for user: " + str(user))
         # Get the locker from the database
         locker = await Locker.filter(uid=user['user_id']).first()
         if not locker:

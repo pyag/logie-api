@@ -1,9 +1,10 @@
 from typing import Annotated, List
+import logging
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 
 from pydmodels.file_model import FileModel, FileDataModel, CreateNewFolderModel
-from service.file import list_uploaded_files, upload_file_chunk, download_file, hide_file, unhide_file, delete_file, create_folder
+from service.file import list_uploaded_files, upload_file_chunk, download_file, hide_file, unhide_file, delete_file, create_folder, list_public_locker_files
 from service.session import get_current_user
 
 router = APIRouter()
@@ -108,3 +109,32 @@ async def create_folder_endpoint(
         "fid": folder_id,
         "message": "Folder created successfully"
     }
+
+
+@router.get("/public/locker/{locker_uid}/files/", response_model=FileModel)
+async def get_public_locker_files(
+    locker_uid: str,
+    pid: str,
+):
+    """
+    Get non-hidden files from a public locker (no authentication required).
+    
+    Args:
+        locker_uid: The UID of the locker owner
+        pid: The parent folder ID to list files from (query parameter)
+        
+    Returns:
+        FileModel with non-hidden files only
+    """
+    try:
+        entries_data = await list_public_locker_files(locker_uid, pid)
+        entries: list[FileDataModel] = [FileDataModel(**entry) for entry in entries_data]
+        
+        header = ["name", "type", "size", "modified", "download"]
+        return FileModel(header=header, data=entries)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.exception(f"Error fetching public locker files for locker {locker_uid}")
+        raise HTTPException(status_code=500, detail="Internal server error")

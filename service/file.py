@@ -12,6 +12,7 @@ from mimetypes import guess_extension
 from tortoise.exceptions import IntegrityError
 
 from dbmodels.file_model import File as FileDB
+from dbmodels.locker_model import Locker
 from enums.file import FileSource, FileType
 from logic.file import delete_file_from_storage
 
@@ -151,6 +152,58 @@ async def list_uploaded_files(user_id: str, pid: str) -> list[dict[str, str]]:
             "size": _format_size(file_record.size),
             "modified": file_record.created_at.isoformat(),
         })
+    return file_entries
+
+
+async def list_public_locker_files(locker_uid: str, pid: str) -> list[dict[str, str]]:
+    """
+    List non-hidden files from a public locker.
+    
+    Args:
+        locker_uid: The UID of the locker owner
+        pid: The parent folder ID to list files from
+        
+    Returns:
+        List of non-hidden file entries
+        
+    Raises:
+        HTTPException: If locker not found, invalid pid, or parent doesn't belong to locker
+    """
+    file_entries: list[dict[str, str]] = []
+    
+    # Validate locker exists
+    try:
+        locker = await Locker.get_or_none(uid=locker_uid)
+        if not locker:
+            raise HTTPException(status_code=404, detail="Locker not found")
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
+        raise HTTPException(status_code=400, detail="Invalid locker ID")
+    
+    # Validate pid is a valid UUID and belongs to the locker
+    try:
+        parent_uuid = UUID(pid)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid parent folder ID")
+    
+    parent = await FileDB.get_or_none(uid=parent_uuid, user=locker)
+    if not parent:
+        raise HTTPException(status_code=404, detail="Parent folder not found or does not belong to this locker")
+    
+    # Fetch non-hidden files only
+    files = await FileDB.filter(user=locker, parent=parent, hidden=False).order_by('-created_at')
+    
+    for file_record in files:
+        file_entries.append({
+            "file_id": str(file_record.uid),
+            "name": file_record.name,
+            "type": file_record.file_type.value if file_record.file_type else "UNKNOWN",
+            "hidden": False,  # Always False in public view
+            "size": _format_size(file_record.size),
+            "modified": file_record.created_at.isoformat(),
+        })
+    
     return file_entries
 
 
