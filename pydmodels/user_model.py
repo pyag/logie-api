@@ -20,6 +20,7 @@ class DeleteLockerRequestModel(BaseModel):
 class LockerSearchItemModel(BaseModel):
     uid: str
     name: str
+    root_id: str
 
 class SearchLockerResponseModel(BaseModel):
     status_code: int

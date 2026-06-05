@@ -53,20 +53,24 @@ async def search_lockers(name: str) -> list[dict]:
 
     partial_matches = await partial_query.all()
 
-    results = [
-        {
-            "uid": str(locker.uid),
-            "name": locker.name,
-        }
-        for locker in exact_match
-    ]
-    results.extend(
-        {
-            "uid": str(locker.uid),
-            "name": locker.name,
-        }
-        for locker in partial_matches
-    )
+    results = []
+    for locker in exact_match:
+        results.append(
+            {
+                "uid": str(locker.uid),
+                "name": locker.name,
+                "root_id": await get_root_folder_id(locker),
+            }
+        )
+
+    for locker in partial_matches:
+        results.append(
+            {
+                "uid": str(locker.uid),
+                "name": locker.name,
+                "root_id": await get_root_folder_id(locker),
+            }
+        )
 
     return results
 
