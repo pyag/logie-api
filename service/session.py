@@ -50,10 +50,8 @@ def get_current_user(request: Request) -> dict:
 
     user = _get_session_user(request)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Not authenticated',
-        )
+        return None
+
     return user
 
 

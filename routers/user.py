@@ -189,6 +189,11 @@ async def search_lockers(name: str | None = Query(None, min_length=1, descriptio
 @router.post('/change-password/')
 async def change_password(body: ChangePasswordRequestModel, user: dict = Depends(get_current_user)):
     """Change the password for the currently authenticated user."""
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
 
     if not body.current_password or not body.new_password:
         raise HTTPException(
@@ -224,6 +229,12 @@ async def change_password(body: ChangePasswordRequestModel, user: dict = Depends
 @router.post('/delete-locker/')
 async def delete_locker(body: DeleteLockerRequestModel, request: Request, user: dict = Depends(get_current_user)):
     """Delete the locker for the currently authenticated user."""
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
 
     if not body.password:
         raise HTTPException(
