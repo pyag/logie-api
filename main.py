@@ -77,10 +77,24 @@ app.add_middleware(
 )
 
 # Starlette session middleware
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=get_settings().secret_key
-)
+settings = get_settings()
+
+session_kwargs = {
+    'secret_key': settings.secret_key,
+}
+
+if settings.cors_origin.startswith('http://localhost') or settings.cors_origin.startswith('http://127.0.0.1'):
+    session_kwargs.update({
+        'same_site': 'lax',
+        'https_only': False,
+    })
+else:
+    session_kwargs.update({
+        'same_site': 'none',
+        'https_only': True,
+    })
+
+app.add_middleware(SessionMiddleware, **session_kwargs)
 
 app.include_router(files_router)
 app.include_router(user_router)
