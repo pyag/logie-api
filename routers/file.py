@@ -12,7 +12,8 @@ router = APIRouter()
 @router.get("/files/", response_model=FileModel)
 async def list_files(
     pid: str,
-    user: Annotated[dict | None, Depends(get_current_user)] = None):
+    user: Annotated[dict, Depends(get_current_user)],
+):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
@@ -26,7 +27,7 @@ async def list_files(
 @router.get("/download/{file_id}")
 async def download_file_endpoint(
     file_id: str,
-    user: Annotated[dict | None, Depends(get_current_user)] = None,
+    user: Annotated[dict, Depends(get_current_user)],
 ):
     user_id = user["user_id"] if user else None
     return await download_file(file_id, user_id)
@@ -35,6 +36,7 @@ async def download_file_endpoint(
 @router.post("/upload/chunk/")
 async def upload_chunk(
     request: Request,
+    user: Annotated[dict, Depends(get_current_user)],
     file: UploadFile = File(...),
     upload_id: str = Form(...),
     filename: str = Form(...),
@@ -43,7 +45,6 @@ async def upload_chunk(
     chunk_index: int = Form(...),
     total_chunks: int = Form(...),
     pid: str = Form(...),
-    user: Annotated[dict | None, Depends(get_current_user)] = None,
 ):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -65,7 +66,7 @@ async def upload_chunk(
 @router.post("/hide/{file_id}")
 async def hide_file_endpoint(
     file_id: str,
-    user: Annotated[dict | None, Depends(get_current_user)] = None,
+    user: Annotated[dict, Depends(get_current_user)],
 ):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -77,7 +78,7 @@ async def hide_file_endpoint(
 @router.post("/unhide/{file_id}")
 async def unhide_file_endpoint(
     file_id: str,
-    user: Annotated[dict | None, Depends(get_current_user)] = None,
+    user: Annotated[dict, Depends(get_current_user)],
 ):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -88,7 +89,7 @@ async def unhide_file_endpoint(
 @router.post("/delete/{file_id}")
 async def delete_file_endpoint(
     file_id: str,
-    user: Annotated[dict | None, Depends(get_current_user)] = None,
+    user: Annotated[dict, Depends(get_current_user)],
 ):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -99,7 +100,7 @@ async def delete_file_endpoint(
 @router.post("/create_folder/")
 async def create_folder_endpoint(
     body: CreateNewFolderModel,
-    user: Annotated[dict | None, Depends(get_current_user)] = None,
+    user: Annotated[dict, Depends(get_current_user)],
 ):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")

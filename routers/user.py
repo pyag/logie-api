@@ -1,7 +1,8 @@
 import logging
+from datetime import datetime
 
 from argon2 import PasswordHasher
-from fastapi import APIRouter, HTTPException, status, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, Request, Query, status
 from email_validator import validate_email, EmailNotValidError
 
 from pydmodels.user_model import (
@@ -13,8 +14,8 @@ from pydmodels.user_model import (
 )
 from service import user as user_service
 from service import session as session_service
-from service.auth import create_access_token, decode_access_token
-from fastapi import HTTPException
+from service.auth import create_access_token
+from service.session import get_current_user
 
 logger = logging.getLogger("uvicorn.error")
 router = APIRouter()
@@ -78,6 +79,7 @@ async def signup(req_body: SignupRequestModel, request: Request):
             "locker_name": locker.name,
             "email": locker.email or "",
             "root_id": root_id,
+            "session_created": datetime.now().isoformat(),
         })
 
         return {
@@ -130,6 +132,7 @@ async def login(req_body: LoginRequestModel, request: Request):
             "locker_name": locker.name,
             "email": locker.email or "",
             "root_id": root_id,
+            "session_created": datetime.now().isoformat(),
         })
 
         return {
@@ -148,36 +151,8 @@ async def login(req_body: LoginRequestModel, request: Request):
         )
 
 @router.get('/me/')
-async def get_me(request: Request):
-    """Return the currently authenticated user from the session."""
-    # Try Authorization header (Bearer token) first
-    auth_header = request.headers.get("authorization")
-    if auth_header and auth_header.lower().startswith("bearer "):
-        token = auth_header.split(" ", 1)[1].strip()
-        try:
-            payload = decode_access_token(token)
-            return {
-                "status_code": status.HTTP_200_OK,
-                "message": "User authenticated",
-                "success": True,
-                "data": {
-                    "user_id": payload.get("user_id"),
-                    "locker_name": payload.get("locker_name"),
-                    "email": payload.get("email"),
-                    "root_id": payload.get("root_id"),
-                    "session_created": payload.get("session_created"),
-                },
-            }
-        except Exception:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
-
-    # Fallback to session cookie
-    user = session_service.get_current_user(request)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-        )
+async def get_me(user: dict = Depends(get_current_user)):
+    """Return the currently authenticated user from the session or token."""
     return {
         "status_code": status.HTTP_200_OK,
         "message": "User authenticated",
@@ -212,14 +187,8 @@ async def search_lockers(name: str | None = Query(None, min_length=1, descriptio
         )
 
 @router.post('/change-password/')
-async def change_password(body: ChangePasswordRequestModel, request: Request):
+async def change_password(body: ChangePasswordRequestModel, user: dict = Depends(get_current_user)):
     """Change the password for the currently authenticated user."""
-    user = session_service.get_current_user(request)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-        )
 
     if not body.current_password or not body.new_password:
         raise HTTPException(
@@ -253,14 +222,8 @@ async def change_password(body: ChangePasswordRequestModel, request: Request):
         )
 
 @router.post('/delete-locker/')
-async def delete_locker(body: DeleteLockerRequestModel, request: Request):
+async def delete_locker(body: DeleteLockerRequestModel, request: Request, user: dict = Depends(get_current_user)):
     """Delete the locker for the currently authenticated user."""
-    user = session_service.get_current_user(request)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-        )
 
     if not body.password:
         raise HTTPException(
@@ -270,7 +233,8 @@ async def delete_locker(body: DeleteLockerRequestModel, request: Request):
 
     try:
         await user_service.delete_locker(user, body.password)
-        session_service.clear_session(request)
+        if request is not None:
+            session_service.clear_session(request)
         return {
             "status_code": status.HTTP_200_OK,
             "message": "Locker deleted successfully",
