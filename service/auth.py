@@ -5,12 +5,12 @@ import jwt
 
 from config import get_settings
 
-settings = get_settings()
-SECRET = settings.jwt_secret
 ALGORITHM = "HS256"
 
 
 def create_access_token(data: Dict[str, Any], expires_minutes: int | None = None) -> str:
+    settings = get_settings()
+    SECRET = settings.jwt_secret
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=(expires_minutes or settings.jwt_exp_minutes))
     to_encode.update({"exp": expire})
@@ -19,5 +19,7 @@ def create_access_token(data: Dict[str, Any], expires_minutes: int | None = None
 
 
 def decode_access_token(token: str) -> Dict[str, Any]:
+    settings = get_settings()
+    SECRET = settings.jwt_secret
     payload = jwt.decode(token, SECRET, algorithms=[ALGORITHM])
     return payload
