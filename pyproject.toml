@@ -16,4 +16,4 @@ dependencies = [
 ]
 
 [tool.tortoise]
-config = "db.TORTOISE_ORM"
+tortoise_orm = "db.TORTOISE_ORM"
