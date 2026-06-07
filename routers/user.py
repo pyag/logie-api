@@ -13,6 +13,8 @@ from pydmodels.user_model import (
 )
 from service import user as user_service
 from service import session as session_service
+from service.auth import create_access_token, decode_access_token
+from fastapi import HTTPException
 
 logger = logging.getLogger("uvicorn.error")
 router = APIRouter()
@@ -71,10 +73,18 @@ async def signup(req_body: SignupRequestModel, request: Request):
         # Create session with the returned locker
         session_service.create_session(request, locker, root_id)
 
+        token = create_access_token({
+            "user_id": str(locker.uid),
+            "locker_name": locker.name,
+            "email": locker.email or "",
+            "root_id": root_id,
+        })
+
         return {
             "status_code": status.HTTP_201_CREATED,
             "message": "Signup successful!",
             "success": True,
+            "data": {"token": token},
         }
     except ValueError as ve:
         logger.warning(f"Signup validation failed: {ve}")
@@ -115,10 +125,18 @@ async def login(req_body: LoginRequestModel, request: Request):
         # Create session
         session_service.create_session(request, locker, root_id)
 
+        token = create_access_token({
+            "user_id": str(locker.uid),
+            "locker_name": locker.name,
+            "email": locker.email or "",
+            "root_id": root_id,
+        })
+
         return {
             "status_code": status.HTTP_200_OK,
             "message": "Login successful!",
             "success": True,
+            "data": {"token": token},
         }
     except HTTPException:
         raise
@@ -132,6 +150,28 @@ async def login(req_body: LoginRequestModel, request: Request):
 @router.get('/me/')
 async def get_me(request: Request):
     """Return the currently authenticated user from the session."""
+    # Try Authorization header (Bearer token) first
+    auth_header = request.headers.get("authorization")
+    if auth_header and auth_header.lower().startswith("bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        try:
+            payload = decode_access_token(token)
+            return {
+                "status_code": status.HTTP_200_OK,
+                "message": "User authenticated",
+                "success": True,
+                "data": {
+                    "user_id": payload.get("user_id"),
+                    "locker_name": payload.get("locker_name"),
+                    "email": payload.get("email"),
+                    "root_id": payload.get("root_id"),
+                    "session_created": payload.get("session_created"),
+                },
+            }
+        except Exception:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+    # Fallback to session cookie
     user = session_service.get_current_user(request)
     if not user:
         raise HTTPException(
