@@ -1,7 +1,9 @@
+import logging
 from datetime import datetime
 from fastapi import HTTPException, Request, status
 from service.auth import decode_access_token
 
+logger = logging.getLogger("uvicorn.error")
 
 def create_session(request: Request, locker, root_id: str) -> None:
     """Store user information in the session after successful signup/login."""
@@ -43,10 +45,8 @@ def get_current_user(request: Request) -> dict:
                 'session_created': payload.get('session_created'),
             }
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail='Invalid or expired token',
-            )
+            logger.warning("Invalid Bearer token provided")
+            return None
 
     user = _get_session_user(request)
     if not user:
