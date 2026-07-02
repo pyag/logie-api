@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 import aiofiles
 from fastapi import HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from mimetypes import guess_extension
+from mimetypes import guess_extension, guess_type
 from tortoise.exceptions import IntegrityError
 
 from dbmodels.file_model import File as FileDB
@@ -207,6 +207,20 @@ async def list_public_locker_files(locker_uid: str, pid: str) -> list[dict[str, 
     return file_entries
 
 
+def _build_file_response(file_record: FileDB, inline: bool = False) -> FileResponse:
+    file_path = Path(file_record.location)
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found on server")
+
+    media_type = guess_type(file_record.name)[0] or "application/octet-stream"
+    response = FileResponse(path=file_path, media_type=media_type)
+    if inline:
+        response.headers["Content-Disposition"] = "inline"
+    else:
+        response.headers["Content-Disposition"] = f'attachment; filename="{file_record.name}"'
+    return response
+
+
 async def download_file(file_id: str, user_id: str | None = None) -> FileResponse:
     try:
         file_uuid = UUID(file_id)
@@ -223,11 +237,24 @@ async def download_file(file_id: str, user_id: str | None = None) -> FileRespons
         if not user_id or str(file_record.user_id) != user_id:
             raise HTTPException(status_code=403, detail="Permission denied to download the file")
 
-    file_path = Path(file_record.location)
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="File not found on server")
+    return _build_file_response(file_record, inline=False)
 
-    return FileResponse(path=file_path, filename=file_record.name)
+
+async def view_file(file_id: str, user_id: str | None = None) -> FileResponse:
+    try:
+        file_uuid = UUID(file_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid file ID")
+
+    file_record = await FileDB.get_or_none(uid=file_uuid)
+    if not file_record:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    if file_record.hidden:
+        if not user_id or str(file_record.user_id) != user_id:
+            raise HTTPException(status_code=403, detail="Permission denied to view the file")
+
+    return _build_file_response(file_record, inline=True)
 
 
 async def hide_file(file_id: str, user_id: str) -> dict[str, str]:

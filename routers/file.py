@@ -4,7 +4,7 @@ import logging
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 
 from pydmodels.file_model import FileModel, FileDataModel, CreateNewFolderModel
-from service.file import list_uploaded_files, upload_file_chunk, download_file, hide_file, unhide_file, delete_file, create_folder, list_public_locker_files
+from service.file import list_uploaded_files, upload_file_chunk, download_file, view_file, hide_file, unhide_file, delete_file, create_folder, list_public_locker_files
 from service.session import get_current_user
 
 router = APIRouter()
@@ -31,6 +31,15 @@ async def download_file_endpoint(
 ):
     user_id = user["user_id"] if user else None
     return await download_file(file_id, user_id)
+
+
+@router.get("/view/{file_id}")
+async def view_file_endpoint(
+    file_id: str,
+    user: Annotated[dict | None, Depends(get_current_user)] = None,
+):
+    user_id = user["user_id"] if user else None
+    return await view_file(file_id, user_id)
 
 
 @router.post("/upload/chunk/")
